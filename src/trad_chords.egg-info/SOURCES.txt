@@ -8,5 +8,6 @@ src/trad_chords.egg-info/dependency_links.txt
 src/trad_chords.egg-info/entry_points.txt
 src/trad_chords.egg-info/requires.txt
 src/trad_chords.egg-info/top_level.txt
+src/trad_chords/features/index_builder.py
 src/trad_chords/io/fetch.py
 src/trad_chords/io/loaders.py

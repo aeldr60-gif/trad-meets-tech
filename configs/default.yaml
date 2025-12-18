@@ -8,3 +8,11 @@ paths:
 sources:
   tunes_url: "https://raw.githubusercontent.com/adactio/TheSession-data/main/csv/tunes.csv"
   popularity_url: "https://raw.githubusercontent.com/adactio/TheSession-data/main/csv/tune_popularity.csv"
+
+pipeline:
+  tune_types: ["jig", "reel"]
+  min_tunebooks: 0
+  top_n: null
+
+artifacts:
+  jigs_reels_index_csv: "data/processed/jigs_reels_index.csv"

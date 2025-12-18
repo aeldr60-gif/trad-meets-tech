@@ -5,6 +5,9 @@ from trad_chords.config import load_config
 from trad_chords.io.fetch import fetch_thesession_csvs
 
 from trad_chords.io.loaders import load_tunes_csv, load_popularity_csv
+from trad_chords.features.index_builder import build_jigs_reels_index, write_index
+
+
 
 
 app = typer.Typer(add_completion=False)
@@ -40,3 +43,21 @@ def load_data(config: str = DEFAULT_CONFIG):
     print(f"Popularity rows: {len(pop):,}")
     print(f"Popularity columns: {list(pop.columns)}")
     print("Sample tune types:", sorted(tunes["type"].dropna().astype(str).str.lower().unique())[:20])
+
+@app.command("build-index")
+def build_index(config: str = DEFAULT_CONFIG):
+    cfg = load_config(config)
+    tunes = load_tunes_csv(cfg.paths.raw_tunes_csv)
+    pop = load_popularity_csv(cfg.paths.raw_popularity_csv)
+
+    df = build_jigs_reels_index(
+        tunes=tunes,
+        popularity=pop,
+        tune_types=cfg.pipeline.tune_types,
+        min_tunebooks=cfg.pipeline.min_tunebooks,
+        top_n=cfg.pipeline.top_n,
+    )
+
+    write_index(df, cfg.artifacts.jigs_reels_index_csv)
+    print(f"Wrote {len(df):,} rows -> {cfg.artifacts.jigs_reels_index_csv}")
+    print(df.head(5))

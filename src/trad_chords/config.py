@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import yaml
 
 
@@ -20,9 +20,23 @@ class SourcesConfig:
 
 
 @dataclass(frozen=True)
+class PipelineConfig:
+    tune_types: list[str]
+    min_tunebooks: int
+    top_n: Optional[int]
+
+
+@dataclass(frozen=True)
+class ArtifactsConfig:
+    jigs_reels_index_csv: Path
+
+
+@dataclass(frozen=True)
 class AppConfig:
     paths: PathsConfig
     sources: SourcesConfig
+    pipeline: PipelineConfig
+    artifacts: ArtifactsConfig
 
 
 def load_config(path: str | Path) -> AppConfig:
@@ -31,6 +45,8 @@ def load_config(path: str | Path) -> AppConfig:
 
     paths = data["paths"]
     sources = data["sources"]
+    pipeline = data.get("pipeline", {})
+    artifacts = data.get("artifacts", {})
 
     return AppConfig(
         paths=PathsConfig(
@@ -43,5 +59,13 @@ def load_config(path: str | Path) -> AppConfig:
         sources=SourcesConfig(
             tunes_url=str(sources["tunes_url"]),
             popularity_url=str(sources["popularity_url"]),
+        ),
+        pipeline=PipelineConfig(
+            tune_types=[str(x).lower() for x in pipeline.get("tune_types", ["jig", "reel"])],
+            min_tunebooks=int(pipeline.get("min_tunebooks", 0)),
+            top_n=pipeline.get("top_n"),
+        ),
+        artifacts=ArtifactsConfig(
+            jigs_reels_index_csv=Path(artifacts.get("jigs_reels_index_csv", "data/processed/jigs_reels_index.csv"))
         ),
     )
