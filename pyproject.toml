@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trad-chords"
+version = "0.1.0"
+description = "Trad Meets Tech: Predicting chords for jigs and reels"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pyyaml>=6.0",
+  "typer>=0.12",
+  "rich>=13.7",
+  "pandas>=2.0",
+  "numpy>=1.24",
+]
+
+[project.scripts]
+trad-chords = "trad_chords.cli:app"

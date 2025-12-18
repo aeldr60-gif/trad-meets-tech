@@ -1,0 +1,10 @@
+paths:
+  raw_tunes_csv: "data/raw/tunes.csv"
+  raw_popularity_csv: "data/raw/tune_popularity.csv"
+  processed_dir: "data/processed"
+  outputs_dir: "outputs"
+  model_dir: "outputs/models"
+
+sources:
+  tunes_url: "https://raw.githubusercontent.com/adactio/TheSession-data/main/csv/tunes.csv"
+  popularity_url: "https://raw.githubusercontent.com/adactio/TheSession-data/main/csv/tune_popularity.csv"

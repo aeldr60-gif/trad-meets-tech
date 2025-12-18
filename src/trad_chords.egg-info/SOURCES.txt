@@ -1,0 +1,12 @@
+pyproject.toml
+src/trad_chords/_init_.py
+src/trad_chords/cli.py
+src/trad_chords/config.py
+src/trad_chords.egg-info/PKG-INFO
+src/trad_chords.egg-info/SOURCES.txt
+src/trad_chords.egg-info/dependency_links.txt
+src/trad_chords.egg-info/entry_points.txt
+src/trad_chords.egg-info/requires.txt
+src/trad_chords.egg-info/top_level.txt
+src/trad_chords/io/fetch.py
+src/trad_chords/io/loaders.py
