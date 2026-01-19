@@ -18,7 +18,8 @@ from trad_chords.utils.cache import should_skip
 from trad_chords.models.training_data import make_training_frames
 from trad_chords.models.baseline import train_baseline, BaselineModels
 
-
+import json
+from pathlib import Path
 
 
 app = typer.Typer(add_completion=False)
@@ -162,6 +163,10 @@ def train_cmd(config: str = DEFAULT_CONFIG):
 
 @app.command("evaluate-selfcheck")
 def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG):
+    import json
+    from pathlib import Path
+    import pandas as pd
+
     cfg = load_config(config)
 
     beat = pd.read_csv(cfg.artifacts.beat_slots_csv)
@@ -185,4 +190,21 @@ def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG):
     print(f"Self-check placement accuracy: {placement_acc:.3f}")
     print(f"Self-check tone accuracy (on true chord slots): {tone_acc:.3f}")
 
+    # Write metrics
+    (cfg.paths.outputs_dir / "evaluation").mkdir(parents=True, exist_ok=True)
 
+    metrics = {
+        "placement_accuracy": placement_acc,
+        "tone_accuracy": tone_acc,
+        "n_rows": int(len(beat)),
+        "n_chordy_tunes": int(len(chordy_ids)),
+    }
+
+    metrics_json = cfg.paths.outputs_dir / "evaluation" / "selfcheck_metrics.json"
+    summary_csv = cfg.paths.outputs_dir / "evaluation" / "selfcheck_summary.csv"
+
+    metrics_json.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+    pd.DataFrame([metrics]).to_csv(summary_csv, index=False)
+
+    print(f"Wrote {metrics_json}")
+    print(f"Wrote {summary_csv}")
