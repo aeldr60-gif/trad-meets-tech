@@ -15,6 +15,8 @@ from trad_chords.utils.cache import should_skip
 from trad_chords.features.splitter import split_chordy_chordless, write_df
 from trad_chords.utils.cache import should_skip
 
+from trad_chords.models.training_data import make_training_frames
+from trad_chords.models.baseline import train_baseline, BaselineModels
 
 
 
@@ -132,3 +134,55 @@ def split_index_cmd(config: str = DEFAULT_CONFIG):
 
     print(f"Chordy tunes: {len(chordy):,} -> {cfg.artifacts.chordy_index_csv}")
     print(f"Chordless tunes: {len(chordless):,} -> {cfg.artifacts.chordless_index_csv}")
+
+@app.command("train")
+def train_cmd(config: str = DEFAULT_CONFIG):
+    cfg = load_config(config)
+
+    beat = pd.read_csv(cfg.artifacts.beat_slots_csv)
+    chordy = pd.read_csv(cfg.artifacts.chordy_index_csv)
+    chordy_ids = set(chordy["tune_id"].tolist())
+    beat = beat[beat["tune_id"].isin(chordy_ids)].copy()
+
+    X, y_place, X_tone, y_tone = make_training_frames(beat)
+
+    # 🔒 SAFETY CHECK
+    if y_place.nunique() < 2:
+        raise ValueError(
+            f"Placement labels have only one class: {y_place.unique().tolist()}. "
+            "This means chord tokens were not detected in beat slots."
+        )
+
+    models = train_baseline(X, y_place, X_tone, y_tone, seed=42)
+    models.save(cfg.paths.model_dir)
+
+    print(f"Trained on {len(beat):,} beat slots")
+
+
+
+@app.command("evaluate-selfcheck")
+def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG):
+    cfg = load_config(config)
+
+    beat = pd.read_csv(cfg.artifacts.beat_slots_csv)
+    chordy = pd.read_csv(cfg.artifacts.chordy_index_csv)
+    chordy_ids = set(chordy["tune_id"].tolist())
+    beat = beat[beat["tune_id"].isin(chordy_ids)].copy()
+
+    X, y_place, X_tone, y_tone = make_training_frames(beat)
+    models = BaselineModels.load(cfg.paths.model_dir)
+
+    y_place_pred = models.placement.predict(X)
+    placement_acc = float((y_place_pred == y_place).mean())
+
+    tone_mask = (y_place == 1)
+    if int(tone_mask.sum()) > 0:
+        y_tone_pred = models.tone.predict(X.loc[tone_mask])
+        tone_acc = float((y_tone_pred == y_tone.values).mean())
+    else:
+        tone_acc = 0.0
+
+    print(f"Self-check placement accuracy: {placement_acc:.3f}")
+    print(f"Self-check tone accuracy (on true chord slots): {tone_acc:.3f}")
+
+
