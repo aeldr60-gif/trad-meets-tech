@@ -2,58 +2,60 @@ from __future__ import annotations
 
 from pathlib import Path
 import pandas as pd
+from typing import Iterable, Optional
+
+import re
+
+CHORD_RE = re.compile(r'"[A-G][#b]?(?:m|min|maj|dim|aug|7)?[^"]*"')
+
 
 
 def build_jigs_reels_index(
     tunes: pd.DataFrame,
     popularity: pd.DataFrame,
-    tune_types: list[str],
+    tune_types: Iterable[str],
     min_tunebooks: int = 0,
-    top_n: int | None = None,
+    top_n: Optional[int] = None,
 ) -> pd.DataFrame:
     """
-    Build an index of tunes filtered to target tune types, joined with popularity.
+    Build an index of jigs/reels joined with popularity.
 
-    Output columns (minimum):
-      tune_id, name, type, meter, mode, tunebooks, has_chords, abc
+    This function ENFORCES top_n at the very end to guarantee correctness.
     """
-    t = tunes.copy()
 
-    # Normalize types
-    t["type_norm"] = t["type"].astype(str).str.strip().str.lower()
+    # Normalize tune types
+    tune_types = {t.lower() for t in tune_types}
 
-    # Filter to desired types
-    keep = set([x.lower() for x in tune_types])
-    t = t[t["type_norm"].isin(keep)].copy()
+    # Filter to requested tune types
+    df = tunes.copy()
+    df["type"] = df["type"].astype(str).str.lower()
+    df = df[df["type"].isin(tune_types)]
+    
+    # Which tunes have chords?
+    df["has_chords"] = df["abc"].fillna("").str.contains(CHORD_RE)
 
-    # Popularity join (ensure tune_id is numeric where possible)
-    pop = popularity.copy()
-    pop["tune_id"] = pd.to_numeric(pop["tune_id"], errors="coerce")
-    t["tune_id"] = pd.to_numeric(t["tune_id"], errors="coerce")
+    # Join popularity
+    pop = popularity[["tune_id", "tunebooks"]]
+    df = df.merge(pop, on="tune_id", how="left")
 
-    t = t.merge(pop[["tune_id", "tunebooks"]], on="tune_id", how="left")
-    t["tunebooks"] = t["tunebooks"].fillna(0).astype(int)
+    # Fill missing popularity
+    df["tunebooks"] = df["tunebooks"].fillna(0).astype(int)
 
-    # Detect chord presence in ABC: common syntax is "A" in quotes, e.g. ""Am"" or ""G""
-    # We'll treat any quoted chord token as chords present.
-    abc = t["abc"].fillna("").astype(str)
-    t["has_chords"] = abc.str.contains(r'""[^"]+""', regex=True)
+    # Apply minimum popularity filter
+    if min_tunebooks > 0:
+        df = df[df["tunebooks"] >= min_tunebooks]
 
-    # Apply popularity threshold
-    t = t[t["tunebooks"] >= int(min_tunebooks)].copy()
+    # Sort by popularity DESC
+    df = df.sort_values("tunebooks", ascending=False)
 
-    # Optional: keep only top N by tunebooks
+    # 🔑 ENFORCE top_n HERE (after all filtering + sorting)
     if top_n is not None:
-        t = t.sort_values(["tunebooks", "tune_id"], ascending=[False, True]).head(int(top_n)).copy()
-    else:
-        t = t.sort_values(["tunebooks", "tune_id"], ascending=[False, True]).copy()
+        df = df.head(int(top_n))
 
-    # Select/standardize columns
-    cols = []
-    for c in ["tune_id", "name", "type", "meter", "mode", "tunebooks", "has_chords", "abc"]:
-        if c in t.columns:
-            cols.append(c)
-    return t[cols].reset_index(drop=True)
+    # Reset index for cleanliness
+    df = df.reset_index(drop=True)
+
+    return df
 
 
 def write_index(df: pd.DataFrame, dest: Path) -> None:

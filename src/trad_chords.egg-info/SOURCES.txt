@@ -8,6 +8,13 @@ src/trad_chords.egg-info/dependency_links.txt
 src/trad_chords.egg-info/entry_points.txt
 src/trad_chords.egg-info/requires.txt
 src/trad_chords.egg-info/top_level.txt
+src/trad_chords/abc/cleaning.py
+src/trad_chords/abc/parser.py
+src/trad_chords/features/beat_slots.py
 src/trad_chords/features/index_builder.py
+src/trad_chords/features/note_table.py
+src/trad_chords/features/splitter.py
 src/trad_chords/io/fetch.py
 src/trad_chords/io/loaders.py
+src/trad_chords/utils/__init__.py
+src/trad_chords/utils/cache.py

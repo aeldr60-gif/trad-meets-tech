@@ -16,3 +16,17 @@ pipeline:
 
 artifacts:
   jigs_reels_index_csv: "data/processed/jigs_reels_index.csv"
+  notes_table_csv: "data/processed/notes_table_topn.csv"
+  beat_slots_csv: "data/processed/beat_slots_topn.csv"
+  chordy_index_csv: "data/processed/chordy_index.csv"
+  chordless_index_csv: "data/processed/chordless_index.csv"
+
+
+pipeline:
+  tune_types: ["jig", "reel"]
+  min_tunebooks: 0
+  top_n: 1000        # start small for dev (you can raise later)
+  only_chordy: false # later we’ll set true for training
+
+run:
+  overwrite: true   # do not regenerate artifacts if they exist
