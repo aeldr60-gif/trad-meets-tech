@@ -7,7 +7,8 @@ from typing import Iterable, Iterator, Optional
 
 BAR_TOKENS = {"|", "||", "|:", ":|", "::", "[|", "|]"}
 ENDING_START_RE = re.compile(r"\[\d")  # [1 [2
-CHORD_RE = re.compile(r'""([^"]+)""')
+CHORD_RE = re.compile(r'"{1,2}([^"]+?)"{1,2}')
+
 
 
 @dataclass(frozen=True)
