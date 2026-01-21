@@ -22,8 +22,11 @@ def build_notes_table(index_df: pd.DataFrame) -> pd.DataFrame:
     """
     rows: List[Dict[str, Any]] = []
 
+    # IMPORTANT: multiple settings exist for the same tune_id on TheSession.
+    # Throughout the pipeline we therefore treat *setting_id* as the primary identifier.
     for _, r in index_df.iterrows():
         tune_id = r.get("tune_id")
+        setting_id = r.get("setting_id")
         name = r.get("name")
         ttype = r.get("type")
         meter = r.get("meter")
@@ -36,15 +39,26 @@ def build_notes_table(index_df: pd.DataFrame) -> pd.DataFrame:
         measure = 1
         part = 1
         event_i = 0
+        seen_any_notes_in_measure = False
 
         for tok in tokenize_abc(abc):
             event_i += 1
 
             if tok.kind == "bar":
-                # crude part detection: treat "||" as a part boundary sometimes
-                if tok.text == "||":
+                # A "part" in session tune settings typically begins at:
+                # - start of tune
+                # - repeat starts/ends or double bars
+                if tok.text in {"||", "|:", ":|", ":||", "||:"}:
                     part += 1
-                measure += 1
+
+                # Only advance the measure counter if we've actually seen notes since the last bar.
+                # (This avoids creating a phantom first measure when the abc begins with a leading bar token like "|:".)
+                if seen_any_notes_in_measure:
+                    measure += 1
+                    seen_any_notes_in_measure = False
+
+            if tok.kind == "note":
+                seen_any_notes_in_measure = True
 
             if tok.kind == "chord":
                 active_chord = tok.text
@@ -52,6 +66,7 @@ def build_notes_table(index_df: pd.DataFrame) -> pd.DataFrame:
             rows.append(
                 {
                     "tune_id": tune_id,
+                    "setting_id": setting_id,
                     "name": name,
                     "type": ttype,
                     "meter": meter,

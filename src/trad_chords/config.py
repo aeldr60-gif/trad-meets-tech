@@ -34,7 +34,8 @@ class ArtifactsConfig:
     beat_slots_csv: Path
     chordy_index_csv: Path
     chordless_index_csv: Path
-
+    selfcheck_metrics_json: Path
+    selfcheck_summary_csv: Path
 
 @dataclass(frozen=True)
 class RunConfig:
@@ -84,6 +85,8 @@ def load_config(path: str | Path) -> AppConfig:
             beat_slots_csv=Path(artifacts.get("beat_slots_csv", "data/processed/beat_slots.csv")),
             chordy_index_csv=Path(artifacts.get("chordy_index_csv", "data/processed/chordy_index.csv")),
             chordless_index_csv=Path(artifacts.get("chordless_index_csv", "data/processed/chordless_index.csv")),
+            selfcheck_metrics_json=Path(artifacts.get("selfcheck_metrics_json", "outputs/evaluation/selfcheck_metrics.json")),
+            selfcheck_summary_csv=Path(artifacts.get("selfcheck_summary_csv", "outputs/evaluation/selfcheck_summary.csv")),
         ),
         run=RunConfig(
             overwrite=bool(run.get("overwrite", False)),

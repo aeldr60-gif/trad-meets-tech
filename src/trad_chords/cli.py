@@ -107,9 +107,10 @@ def build_beat_slots_cmd(config: str = DEFAULT_CONFIG):
 
     # notes_table is huge; only load needed columns
     usecols = [
-        "tune_id","name","type","meter","mode","tunebooks",
-        "part","measure_number","event_index","token_kind","token_text"
+        "tune_id", "setting_id", "name", "type", "meter", "mode", "tunebooks",
+        "part", "measure_number", "event_index", "token_kind", "token_text", "active_chord"
     ]
+
     notes = pd.read_csv(cfg.artifacts.notes_table_csv, usecols=usecols)
 
     slots = build_beat_slots(notes)
@@ -208,3 +209,4 @@ def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG):
 
     print(f"Wrote {metrics_json}")
     print(f"Wrote {summary_csv}")
+

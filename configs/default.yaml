@@ -20,6 +20,9 @@ artifacts:
   beat_slots_csv: "data/processed/beat_slots_topn.csv"
   chordy_index_csv: "data/processed/chordy_index.csv"
   chordless_index_csv: "data/processed/chordless_index.csv"
+  selfcheck_metrics_json: "outputs/evaluation/selfcheck_metrics.json"
+  selfcheck_summary_csv: "outputs/evaluation/selfcheck_summary.csv"
+
 
 
 pipeline:
@@ -29,4 +32,4 @@ pipeline:
   only_chordy: false # later we’ll set true for training
 
 run:
-  overwrite: false   # do not regenerate artifacts if they exist
+  overwrite: true   # do not regenerate artifacts if they exist
