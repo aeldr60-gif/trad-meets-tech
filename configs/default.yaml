@@ -28,8 +28,8 @@ artifacts:
 pipeline:
   tune_types: ["jig", "reel"]
   min_tunebooks: 0
-  top_n: 1000        # start small for dev (you can raise later)
-  only_chordy: false # later we’ll set true for training
+  top_n: 2500        # start small for dev (you can raise later)
+  only_chordy: true # later we’ll set true for training
 
 run:
   overwrite: true   # do not regenerate artifacts if they exist

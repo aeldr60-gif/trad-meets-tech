@@ -18,5 +18,7 @@ src/trad_chords/io/fetch.py
 src/trad_chords/io/loaders.py
 src/trad_chords/models/baseline.py
 src/trad_chords/models/training_data.py
+src/trad_chords/music/__init__.py
+src/trad_chords/music/theory.py
 src/trad_chords/utils/__init__.py
 src/trad_chords/utils/cache.py

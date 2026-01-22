@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Iterable, Iterator, Optional
 
 
-BAR_TOKENS = {"|", "||", "|:", ":|", "::", "[|", "|]"}
+BAR_TOKENS = {"|", "||", "|:", "||:", ":|", "::", "[|", "|]"}
 ENDING_START_RE = re.compile(r"\[\d")  # [1 [2
 CHORD_RE = re.compile(r'"{1,2}([^"]+?)"{1,2}')
 
@@ -33,46 +33,55 @@ def tokenize_abc(abc: str) -> Iterator[AbcToken]:
     i = 0
     n = len(abc)
 
+    # Match endings like: [1  [2  [10  [1,2  [1-3
+    ending_re = re.compile(r"\[(\d+(?:[,-]\d+)*)")
+
     while i < n:
         # skip whitespace/newlines
         if abc[i].isspace():
             i += 1
             continue
 
-        # chord tokens like ""Am""
+        # chord tokens like ""Am"" or "Am"
         m = CHORD_RE.match(abc, i)
         if m:
             yield AbcToken("chord", m.group(1).strip())
             i = m.end()
             continue
 
-        # endings like [1 [2
-        if ENDING_START_RE.match(abc, i):
-            yield AbcToken("ending", abc[i:i+2])
-            i += 2
+        # endings like [1 [2 [3 [10 [1,2 [1-3
+        m = ending_re.match(abc, i)
+        if m:
+            # Keep the original surface form (e.g. "[1", "[1,2", "[1-3")
+            yield AbcToken("ending", "[" + m.group(1))
+            i = m.end()
             continue
 
         # bar / repeat tokens (longest match first)
+        matched_bar = False
         for bt in sorted(BAR_TOKENS, key=len, reverse=True):
             if abc.startswith(bt, i):
                 yield AbcToken("bar", bt)
                 i += len(bt)
+                matched_bar = True
                 break
-        else:
-            # note
-            m = _NOTE_RE.match(abc, i)
-            if m:
-                yield AbcToken("note", m.group(0))
-                i = m.end()
-                continue
+        if matched_bar:
+            continue
 
-            # rest
-            m = _REST_RE.match(abc, i)
-            if m:
-                yield AbcToken("rest", m.group(0))
-                i = m.end()
-                continue
+        # note
+        m = _NOTE_RE.match(abc, i)
+        if m:
+            yield AbcToken("note", m.group(0))
+            i = m.end()
+            continue
 
-            # fallback: consume one char
-            yield AbcToken("other", abc[i])
-            i += 1
+        # rest
+        m = _REST_RE.match(abc, i)
+        if m:
+            yield AbcToken("rest", m.group(0))
+            i = m.end()
+            continue
+
+        # fallback: consume one char
+        yield AbcToken("other", abc[i])
+        i += 1
