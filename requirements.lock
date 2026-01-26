@@ -1,0 +1,21 @@
+click==8.3.1
+joblib==1.5.3
+markdown-it-py==4.0.0
+mdurl==0.1.2
+numpy==2.4.1
+pandas==2.3.3
+Pygments==2.19.2
+python-dateutil==2.9.0.post0
+pytz==2025.2
+PyYAML==6.0.3
+rich==14.2.0
+scikit-learn==1.8.0
+scipy==1.17.0
+shellingham==1.5.4
+six==1.17.0
+threadpoolctl==3.6.0
+-e git+https://github.com/aeldr60-gif/trad-meets-tech@be1f9797e970b7253448e31eb1f644fbc3187145#egg=trad_chords
+typer==0.21.1
+typing_extensions==4.15.0
+tzdata==2025.3
+UNKNOWN==0.0.0
