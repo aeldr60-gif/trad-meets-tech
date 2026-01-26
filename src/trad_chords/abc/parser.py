@@ -5,15 +5,24 @@ from dataclasses import dataclass
 from typing import Iterable, Iterator, Optional
 
 
-BAR_TOKENS = {"|", "||", "|:", "||:", ":|", "::", "[|", "|]"}
-ENDING_START_RE = re.compile(r"\[\d")  # [1 [2
+# Include common repeat/double-bar variants used in TheSession ABC bodies.
+# Note: ordering/longest-match is handled in tokenize_abc.
+BAR_TOKENS = {"|", "||", "|:", "||:", ":|", ":||", "::", "[|", "|]"}
+
+# Endings like [1 [2 [3, etc. Capture all consecutive digits.
+ENDING_START_RE = re.compile(r"\[\d+")
 CHORD_RE = re.compile(r'"{1,2}([^"]+?)"{1,2}')
+
+# Inline ABC field directives like [K:Dmix] or [L:1/8]. TheSession often embeds these
+# in the body. Treat them as a single token so we don't mis-tokenize the directive
+# value (e.g., "K:D" -> note "D").
+BRACKET_FIELD_RE = re.compile(r"\[[A-Za-z]:[^\]]*\]")
 
 
 
 @dataclass(frozen=True)
 class AbcToken:
-    kind: str  # note, rest, bar, chord, other
+    kind: str  # note, rest, bar, chord, field, other
     text: str
 
 
@@ -22,19 +31,18 @@ _NOTE_RE = re.compile(
     (?P<accidental>\^{1,2}|_{1,2}|=)?   # ^ ^^ _ __ =
     (?P<note>[A-Ga-g])                 # letter
     (?P<octave>[,']*)                  # octave marks
-    (?P<length>\d+|/\d+|/)?            # simple length forms: 2, /, /2
+    # Length forms in TheSession bodies are usually simple (2, /, /2), but can also be
+    # ratios like 3/2 or double slashes like //.
+    (?P<length>\d+/\d+|\d+//|//|\d+/|/\d+|/|\d+)?
     """,
     re.VERBOSE,
 )
 
-_REST_RE = re.compile(r"(?P<rest>[zZxX])(?P<length>\d+|/\d+|/)?")
+_REST_RE = re.compile(r"(?P<rest>[zZxX])(?P<length>\d+/\d+|\d+//|//|\d+/|/\d+|/|\d+)?")
 
 def tokenize_abc(abc: str) -> Iterator[AbcToken]:
     i = 0
     n = len(abc)
-
-    # Match endings like: [1  [2  [10  [1,2  [1-3
-    ending_re = re.compile(r"\[(\d+(?:[,-]\d+)*)")
 
     while i < n:
         # skip whitespace/newlines
@@ -42,46 +50,48 @@ def tokenize_abc(abc: str) -> Iterator[AbcToken]:
             i += 1
             continue
 
-        # chord tokens like ""Am"" or "Am"
+        # Inline field directives like [K:Dmix] or [L:1/8]
+        m_field = BRACKET_FIELD_RE.match(abc, i)
+        if m_field:
+            yield AbcToken("field", m_field.group(0))
+            i = m_field.end()
+            continue
+
+        # chord tokens like ""Am""
         m = CHORD_RE.match(abc, i)
         if m:
             yield AbcToken("chord", m.group(1).strip())
             i = m.end()
             continue
 
-        # endings like [1 [2 [3 [10 [1,2 [1-3
-        m = ending_re.match(abc, i)
-        if m:
-            # Keep the original surface form (e.g. "[1", "[1,2", "[1-3")
-            yield AbcToken("ending", "[" + m.group(1))
-            i = m.end()
+        # endings like [1 [2 [10
+        m_end = ENDING_START_RE.match(abc, i)
+        if m_end:
+            yield AbcToken("ending", m_end.group(0))
+            i = m_end.end()
             continue
 
         # bar / repeat tokens (longest match first)
-        matched_bar = False
         for bt in sorted(BAR_TOKENS, key=len, reverse=True):
             if abc.startswith(bt, i):
                 yield AbcToken("bar", bt)
                 i += len(bt)
-                matched_bar = True
                 break
-        if matched_bar:
-            continue
+        else:
+            # note
+            m = _NOTE_RE.match(abc, i)
+            if m:
+                yield AbcToken("note", m.group(0))
+                i = m.end()
+                continue
 
-        # note
-        m = _NOTE_RE.match(abc, i)
-        if m:
-            yield AbcToken("note", m.group(0))
-            i = m.end()
-            continue
+            # rest
+            m = _REST_RE.match(abc, i)
+            if m:
+                yield AbcToken("rest", m.group(0))
+                i = m.end()
+                continue
 
-        # rest
-        m = _REST_RE.match(abc, i)
-        if m:
-            yield AbcToken("rest", m.group(0))
-            i = m.end()
-            continue
-
-        # fallback: consume one char
-        yield AbcToken("other", abc[i])
-        i += 1
+            # fallback: consume one char
+            yield AbcToken("other", abc[i])
+            i += 1

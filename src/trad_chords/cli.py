@@ -1,38 +1,35 @@
-import pandas as pd
+from __future__ import annotations
 
+import json
+from pathlib import Path
+
+import pandas as pd
 import typer
 from rich import print
 
 from trad_chords.config import load_config
 from trad_chords.io.fetch import fetch_thesession_csvs
-
 from trad_chords.io.loaders import load_tunes_csv, load_popularity_csv
 from trad_chords.features.index_builder import build_jigs_reels_index, write_index
 from trad_chords.features.note_table import build_notes_table, write_notes_table
 from trad_chords.features.beat_slots import build_beat_slots, write_beat_slots
-from trad_chords.utils.cache import should_skip
-
 from trad_chords.features.splitter import split_chordy_chordless, write_df
 from trad_chords.utils.cache import should_skip
-
 from trad_chords.models.training_data import make_training_frames
 from trad_chords.models.baseline import train_baseline, BaselineModels
-
-import json
-from pathlib import Path
-
+from trad_chords.inference.harmonize import harmonize_chordless
 
 app = typer.Typer(add_completion=False)
 DEFAULT_CONFIG = "configs/default.yaml"
 
 
 @app.command()
-def hello():
+def hello() -> None:
     print("trad-chords CLI is working ✅")
 
 
 @app.command("fetch-data")
-def fetch_data(config: str = DEFAULT_CONFIG):
+def fetch_data(config: str = DEFAULT_CONFIG) -> None:
     cfg = load_config(config)
     fetch_thesession_csvs(
         tunes_url=cfg.sources.tunes_url,
@@ -44,8 +41,9 @@ def fetch_data(config: str = DEFAULT_CONFIG):
     print(f"- {cfg.paths.raw_tunes_csv}")
     print(f"- {cfg.paths.raw_popularity_csv}")
 
+
 @app.command("load-data")
-def load_data(config: str = DEFAULT_CONFIG):
+def load_data(config: str = DEFAULT_CONFIG) -> None:
     cfg = load_config(config)
     tunes = load_tunes_csv(cfg.paths.raw_tunes_csv)
     pop = load_popularity_csv(cfg.paths.raw_popularity_csv)
@@ -54,10 +52,12 @@ def load_data(config: str = DEFAULT_CONFIG):
     print(f"Tunes columns: {list(tunes.columns)}")
     print(f"Popularity rows: {len(pop):,}")
     print(f"Popularity columns: {list(pop.columns)}")
-    print("Sample tune types:", sorted(tunes["type"].dropna().astype(str).str.lower().unique())[:20])
+    if "type" in tunes.columns:
+        print("Sample tune types:", sorted(tunes["type"].dropna().astype(str).str.lower().unique())[:20])
+
 
 @app.command("build-index")
-def build_index(config: str = DEFAULT_CONFIG):
+def build_index_cmd(config: str = DEFAULT_CONFIG) -> None:
     cfg = load_config(config)
 
     if should_skip(cfg.artifacts.jigs_reels_index_csv, cfg.run.overwrite):
@@ -83,7 +83,7 @@ def build_index(config: str = DEFAULT_CONFIG):
 
 
 @app.command("build-notes-table")
-def build_notes_table_cmd(config: str = DEFAULT_CONFIG):
+def build_notes_table_cmd(config: str = DEFAULT_CONFIG) -> None:
     cfg = load_config(config)
     index_df = pd.read_csv(cfg.artifacts.jigs_reels_index_csv)
 
@@ -97,20 +97,31 @@ def build_notes_table_cmd(config: str = DEFAULT_CONFIG):
     print(f"Wrote notes table: {len(notes):,} rows -> {cfg.artifacts.notes_table_csv}")
     print(notes.head(10))
 
+
 @app.command("build-beat-slots")
-def build_beat_slots_cmd(config: str = DEFAULT_CONFIG):
+def build_beat_slots_cmd(config: str = DEFAULT_CONFIG) -> None:
     cfg = load_config(config)
 
     if should_skip(cfg.artifacts.beat_slots_csv, cfg.run.overwrite):
         print(f"Skipping build-beat-slots (already exists): {cfg.artifacts.beat_slots_csv}")
         return
 
-    # notes_table is huge; only load needed columns
+    # notes_table can be large; only load needed columns
     usecols = [
-        "tune_id", "setting_id", "name", "type", "meter", "mode", "tunebooks",
-        "part", "measure_number", "event_index", "token_kind", "token_text", "active_chord"
+        "tune_id",
+        "setting_id",
+        "name",
+        "type",
+        "meter",
+        "mode",
+        "tunebooks",
+        "part",
+        "measure_number",
+        "event_index",
+        "token_kind",
+        "token_text",
+        "active_chord",
     ]
-
     notes = pd.read_csv(cfg.artifacts.notes_table_csv, usecols=usecols)
 
     slots = build_beat_slots(notes)
@@ -119,36 +130,45 @@ def build_beat_slots_cmd(config: str = DEFAULT_CONFIG):
     print(f"Wrote beat slots: {len(slots):,} rows -> {cfg.artifacts.beat_slots_csv}")
     print(slots.head(10))
 
+
 @app.command("split-index")
-def split_index_cmd(config: str = DEFAULT_CONFIG):
+def split_index_cmd(config: str = DEFAULT_CONFIG) -> None:
     cfg = load_config(config)
 
-    if should_skip(cfg.artifacts.chordy_index_csv, cfg.run.overwrite) and should_skip(cfg.artifacts.chordless_index_csv, cfg.run.overwrite):
+    if should_skip(cfg.artifacts.chordy_index_csv, cfg.run.overwrite) and should_skip(
+        cfg.artifacts.chordless_index_csv, cfg.run.overwrite
+    ):
         print("Skipping split-index (already exists).")
         return
 
     index_df = pd.read_csv(cfg.artifacts.jigs_reels_index_csv)
-
     chordy, chordless = split_chordy_chordless(index_df)
 
     write_df(chordy, cfg.artifacts.chordy_index_csv)
     write_df(chordless, cfg.artifacts.chordless_index_csv)
 
-    print(f"Chordy tunes: {len(chordy):,} -> {cfg.artifacts.chordy_index_csv}")
-    print(f"Chordless tunes: {len(chordless):,} -> {cfg.artifacts.chordless_index_csv}")
+    print(f"Chordy settings: {len(chordy):,} -> {cfg.artifacts.chordy_index_csv}")
+    print(f"Chordless settings: {len(chordless):,} -> {cfg.artifacts.chordless_index_csv}")
+
 
 @app.command("train")
-def train_cmd(config: str = DEFAULT_CONFIG):
+def train_cmd(config: str = DEFAULT_CONFIG) -> None:
     cfg = load_config(config)
 
     beat = pd.read_csv(cfg.artifacts.beat_slots_csv)
     chordy = pd.read_csv(cfg.artifacts.chordy_index_csv)
-    chordy_ids = set(chordy["tune_id"].tolist())
-    beat = beat[beat["tune_id"].isin(chordy_ids)].copy()
+
+    # Prefer setting_id (multiple settings per tune)
+    if "setting_id" in chordy.columns and "setting_id" in beat.columns:
+        chordy_ids = set(chordy["setting_id"].tolist())
+        beat = beat[beat["setting_id"].isin(chordy_ids)].copy()
+    else:
+        chordy_ids = set(chordy["tune_id"].tolist())
+        beat = beat[beat["tune_id"].isin(chordy_ids)].copy()
 
     X, y_place, X_tone, y_tone = make_training_frames(beat)
 
-    # 🔒 SAFETY CHECK
+    # Safety check: placement must have at least 2 classes
     if y_place.nunique() < 2:
         raise ValueError(
             f"Placement labels have only one class: {y_place.unique().tolist()}. "
@@ -159,21 +179,22 @@ def train_cmd(config: str = DEFAULT_CONFIG):
     models.save(cfg.paths.model_dir)
 
     print(f"Trained on {len(beat):,} beat slots")
-
+    print(f"Wrote models -> {cfg.paths.model_dir}")
 
 
 @app.command("evaluate-selfcheck")
-def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG):
-    import json
-    from pathlib import Path
-    import pandas as pd
-
+def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG) -> None:
     cfg = load_config(config)
 
     beat = pd.read_csv(cfg.artifacts.beat_slots_csv)
     chordy = pd.read_csv(cfg.artifacts.chordy_index_csv)
-    chordy_ids = set(chordy["tune_id"].tolist())
-    beat = beat[beat["tune_id"].isin(chordy_ids)].copy()
+
+    if "setting_id" in chordy.columns and "setting_id" in beat.columns:
+        chordy_ids = set(chordy["setting_id"].tolist())
+        beat = beat[beat["setting_id"].isin(chordy_ids)].copy()
+    else:
+        chordy_ids = set(chordy["tune_id"].tolist())
+        beat = beat[beat["tune_id"].isin(chordy_ids)].copy()
 
     X, y_place, X_tone, y_tone = make_training_frames(beat)
     models = BaselineModels.load(cfg.paths.model_dir)
@@ -181,7 +202,7 @@ def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG):
     y_place_pred = models.placement.predict(X)
     placement_acc = float((y_place_pred == y_place).mean())
 
-    tone_mask = (y_place == 1)
+    tone_mask = y_place == 1
     if int(tone_mask.sum()) > 0:
         y_tone_pred = models.tone.predict(X.loc[tone_mask])
         tone_acc = float((y_tone_pred == y_tone.values).mean())
@@ -192,17 +213,17 @@ def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG):
     print(f"Self-check tone accuracy (on true chord slots): {tone_acc:.3f}")
 
     # Write metrics
-    (cfg.paths.outputs_dir / "evaluation").mkdir(parents=True, exist_ok=True)
-
     metrics = {
         "placement_accuracy": placement_acc,
         "tone_accuracy": tone_acc,
         "n_rows": int(len(beat)),
-        "n_chordy_tunes": int(len(chordy_ids)),
+        "n_chordy_settings": int(len(chordy_ids)),
     }
 
-    metrics_json = cfg.paths.outputs_dir / "evaluation" / "selfcheck_metrics.json"
-    summary_csv = cfg.paths.outputs_dir / "evaluation" / "selfcheck_summary.csv"
+    metrics_json = Path(cfg.artifacts.selfcheck_metrics_json)
+    summary_csv = Path(cfg.artifacts.selfcheck_summary_csv)
+    metrics_json.parent.mkdir(parents=True, exist_ok=True)
+    summary_csv.parent.mkdir(parents=True, exist_ok=True)
 
     metrics_json.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     pd.DataFrame([metrics]).to_csv(summary_csv, index=False)
@@ -210,3 +231,9 @@ def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG):
     print(f"Wrote {metrics_json}")
     print(f"Wrote {summary_csv}")
 
+
+@app.command("harmonize-chordless")
+def harmonize_chordless_cmd(config: str = DEFAULT_CONFIG) -> None:
+    """Predict chords for chordless settings and write a copy/pasteable ABC CSV."""
+    out_csv = harmonize_chordless(config)
+    print(f"Wrote interpolated chordless CSV -> {out_csv}")
