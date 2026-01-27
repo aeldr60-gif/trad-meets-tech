@@ -18,6 +18,7 @@ from trad_chords.utils.cache import should_skip
 from trad_chords.models.training_data import make_training_frames
 from trad_chords.models.baseline import train_baseline, BaselineModels
 from trad_chords.inference.harmonize import harmonize_chordless
+from trad_chords.models.feature_sets import FEATURE_SETS, get_feature_cols
 
 app = typer.Typer(add_completion=False)
 DEFAULT_CONFIG = "configs/default.yaml"
@@ -230,6 +231,89 @@ def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG) -> None:
 
     print(f"Wrote {metrics_json}")
     print(f"Wrote {summary_csv}")
+
+
+@app.command("sweep-feature-sets")
+def sweep_feature_sets_cmd(
+    config: str = DEFAULT_CONFIG,
+    save_models: bool = typer.Option(
+        False,
+        "--save-models/--no-save-models",
+        help="If set, write a copy of the trained models under outputs/models/feature_set_<name>/.",
+    ),
+    out_csv: str = typer.Option(
+        "outputs/evaluation/feature_set_sweep.csv",
+        help="Where to write the sweep results CSV.",
+    ),
+) -> None:
+    """Train + self-check every FEATURE_SET and write a ranked summary CSV.
+
+    This is meant for quick experimentation to see whether feature selection alone
+    improves self-check placement/tone accuracy.
+    """
+    cfg = load_config(config)
+
+    # Load once (large CSV). low_memory=False avoids mixed-type inference surprises.
+    beat = pd.read_csv(cfg.artifacts.beat_slots_csv, low_memory=False)
+    chordy = pd.read_csv(cfg.artifacts.chordy_index_csv)
+
+    if "setting_id" in chordy.columns and "setting_id" in beat.columns:
+        chordy_ids = set(chordy["setting_id"].tolist())
+        beat = beat[beat["setting_id"].isin(chordy_ids)].copy()
+    else:
+        chordy_ids = set(chordy["tune_id"].tolist())
+        beat = beat[beat["tune_id"].isin(chordy_ids)].copy()
+
+    results = []
+
+    for fs_name in FEATURE_SETS.keys():
+        cols = get_feature_cols(fs_name)
+        X, y_place, X_tone, y_tone = make_training_frames(beat, feature_set=fs_name)
+        models = train_baseline(X, y_place, X_tone, y_tone, seed=42)
+
+        y_place_pred = models.placement.predict(X)
+        placement_acc = float((y_place_pred == y_place).mean())
+
+        tone_mask = y_place == 1
+        if int(tone_mask.sum()) > 0:
+            y_tone_pred = models.tone.predict(X.loc[tone_mask])
+            tone_acc = float((y_tone_pred == y_tone.values).mean())
+        else:
+            tone_acc = 0.0
+
+        results.append(
+            {
+                "feature_set": fs_name,
+                "n_features": int(len(cols)),
+                "placement_accuracy": placement_acc,
+                "tone_accuracy": tone_acc,
+                "n_rows": int(len(beat)),
+                "n_chord_slots": int(tone_mask.sum()),
+                "feature_cols": "|".join(map(str, cols)),
+            }
+        )
+
+        print(f"[{fs_name}] placement={placement_acc:.3f} | tone={tone_acc:.3f} | n_features={len(cols)}")
+
+        if save_models:
+            out_dir = cfg.paths.model_dir / f"feature_set_{fs_name}"
+            models.save(out_dir)
+
+    df = pd.DataFrame(results)
+    df = df.sort_values(by=["tone_accuracy", "placement_accuracy"], ascending=False).reset_index(drop=True)
+
+    out_path = Path(out_csv)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_path, index=False)
+
+    best = df.iloc[0].to_dict() if len(df) else {}
+    if best:
+        print("\nBest by tone_accuracy then placement_accuracy:")
+        print(
+            f"- {best['feature_set']}: tone={best['tone_accuracy']:.3f}, "
+            f"placement={best['placement_accuracy']:.3f} (n_features={best['n_features']})"
+        )
+    print(f"\nWrote {out_path}")
 
 
 @app.command("harmonize-chordless")

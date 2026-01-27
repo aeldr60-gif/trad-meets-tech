@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Iterable, Optional, Tuple
 
 import pandas as pd
 
 from trad_chords.features.beat_slots import DEGREE_COLS
+from trad_chords.models.feature_sets import get_feature_cols
 
 
 def ensure_chord_present(df: pd.DataFrame) -> pd.DataFrame:
@@ -25,7 +26,12 @@ def ensure_chord_present(df: pd.DataFrame) -> pd.DataFrame:
     raise ValueError("beat_slots is missing required column: has_chord_here (or chord_present)")
 
 
-def make_training_frames(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
+def make_training_frames(
+    df: pd.DataFrame,
+    *,
+    feature_set: Optional[str] = None,
+    feature_cols: Optional[Iterable[str]] = None,
+) -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
     """Create X/y for the baseline models.
 
     Inputs expect a beat-slots DataFrame produced by `build_beat_slots`.
@@ -41,32 +47,33 @@ def make_training_frames(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.
 
     df = ensure_chord_present(df)
 
+    feature_cols_list = list(feature_cols) if feature_cols is not None else get_feature_cols(feature_set)
+
     required = {
-        "part",
-        "slot_position",
-        "slots_per_measure",
-        "type",
-        "music_mode",
         "has_chord_here",
         "chord_nashville",
-        "rests",
-        *DEGREE_COLS,
+        *feature_cols_list,
     }
     missing = [c for c in required if c not in df.columns]
     if missing:
         raise ValueError(f"beat_slots is missing required columns: {missing}")
 
-    feature_cols = [
+    X = df[feature_cols_list].copy()
+
+    # Normalize dtypes to avoid mixed-type warnings and sklearn failures.
+    numeric_candidates = {
         "part",
         "slot_position",
         "slots_per_measure",
-        *DEGREE_COLS,
         "rests",
-        "type",
-        "music_mode",
-    ]
+        *DEGREE_COLS,
+    }
+    categorical_candidates = {"type", "music_mode"}
 
-    X = df[feature_cols].copy()
+    for c in set(X.columns) & numeric_candidates:
+        X[c] = pd.to_numeric(X[c], errors="coerce").fillna(0.0)
+    for c in set(X.columns) & categorical_candidates:
+        X[c] = X[c].astype(str).fillna("")
     y_place = df["has_chord_here"].astype(int)
 
     tone_mask = y_place == 1

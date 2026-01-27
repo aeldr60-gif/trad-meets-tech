@@ -10,17 +10,7 @@ from trad_chords.config import load_config
 from trad_chords.features.beat_slots import DEGREE_COLS, parse_meter, default_abc_unit_length_whole, extract_l_field_whole, token_duration_beats
 from trad_chords.music.theory import parse_mode, scale_pitch_classes, nashville_to_chord_symbol, mode_to_abc_key
 from trad_chords.models.baseline import BaselineModels
-
-
-FEATURE_COLS = [
-    "part",
-    "slot_position",
-    "slots_per_measure",
-    *DEGREE_COLS,
-    "rests",
-    "type",
-    "music_mode",
-]
+from trad_chords.models.feature_sets import get_feature_cols
 
 
 def _meter_to_unit_length(meter: str) -> str:
@@ -103,14 +93,15 @@ def harmonize_chordless(config_path: str = "configs/default.yaml") -> Path:
     models = BaselineModels.load(cfg.paths.model_dir)
 
     # Build X for inference
-    missing = [c for c in FEATURE_COLS if c not in beat.columns]
+    feature_cols = get_feature_cols()
+    missing = [c for c in feature_cols if c not in beat.columns]
     if missing:
         raise ValueError(
             f"beat_slots is missing required feature columns for inference: {missing}. "
             "Regenerate beat_slots with the updated pipeline."
         )
 
-    X = beat[FEATURE_COLS].copy()
+    X = beat[feature_cols].copy()
 
     # Predict placement
     place_pred = models.placement.predict(X)

@@ -89,14 +89,14 @@ def train_baseline(X, y_place, X_tone, y_tone, seed: int = 42) -> BaselineModels
     placement = Pipeline(
         steps=[
             ("pre", pre_place),
-            ("clf", LogisticRegression(max_iter=500, solver="saga", random_state=seed)),
+            ("clf", LogisticRegression(max_iter=2000, solver="saga", random_state=seed)),
         ]
     )
 
     tone = Pipeline(
         steps=[
             ("pre", build_preprocessor(X_tone) if len(X_tone) else pre_place),
-            ("clf", LogisticRegression(max_iter=500, solver="saga", random_state=seed)),
+            ("clf", LogisticRegression(max_iter=2000, solver="saga",  random_state=seed)),
         ]
     )
 

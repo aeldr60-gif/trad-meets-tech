@@ -67,6 +67,25 @@ def default_abc_unit_length_whole(meter: str) -> float:
 _L_FIELD_RE = re.compile(r"(?:\[)?L\s*:\s*(\d+)\s*/\s*(\d+)(?:\])?", re.IGNORECASE)
 _LEN_SUFFIX_RE = re.compile(r"([0-9/]+)$")
 
+def token_duration_units(token_text: str) -> float:
+    """Duration in units of the ABC unit note length (L:)."""
+    m = _LEN_SUFFIX_RE.search(str(token_text))
+    suffix = m.group(1) if m else ""
+    return max(0.0, length_multiplier_from_suffix(suffix))
+
+
+def slots_per_measure_from_meter_and_unit(meter: str, unit_len_whole: float) -> int:
+    """Number of unit-length slots in a measure."""
+    num, den = parse_meter(meter)
+    measure_whole = float(num) / float(den)
+    unit = float(unit_len_whole) if unit_len_whole else default_abc_unit_length_whole(meter)
+
+    # slots = (measure length) / (unit note length)
+    slots = int(round(measure_whole / unit)) if unit > 0 else num
+    return max(1, min(64, slots))  # cap for safety
+
+
+
 
 def extract_l_field_whole(field_token_text: str) -> Optional[float]:
     """Extract L:1/8 from a token like '[L:1/8]' or 'L:1/8'."""
@@ -196,7 +215,7 @@ def build_beat_slots(notes_df: pd.DataFrame) -> pd.DataFrame:
     # Determine the ABC unit note length (L:) for each setting.
     # If no L: is present, fall back to the ABC default based on meter.
     unit_len_whole_by_setting: Dict[int, float] = {}
-    for sid, sg in notes_df.groupby(["setting_id"], sort=False):
+    for sid, sg in notes_df.groupby("setting_id", sort=False):
         sid_i = int(sid)
         meter = str(sg["meter"].iloc[0] if len(sg) else "4/4")
         unit = default_abc_unit_length_whole(meter)
@@ -225,15 +244,16 @@ def build_beat_slots(notes_df: pd.DataFrame) -> pd.DataFrame:
         scale_pcs = scale_pitch_classes(tonic_pc, key_mode)
 
         meter = str(meta.get("meter") or "4/4")
-        slots_per_measure = meter_to_slots(meter)
         unit_len_whole = unit_len_whole_by_setting.get(int(setting_id), default_abc_unit_length_whole(meter))
+        slots_per_measure = slots_per_measure_from_meter_and_unit(meter, unit_len_whole)
+
 
         # Create empty slots for this measure.
         slots: Dict[int, Dict] = {
             sp: _new_slot(meta, sp, slots_per_measure, key_str, music_mode) for sp in range(1, slots_per_measure + 1)
         }
 
-        time_beats = 0.0
+        time_units = 0.0
         for _, r in g.iterrows():
             kind = str(r["token_kind"])
             txt = str(r["token_text"])
@@ -247,7 +267,7 @@ def build_beat_slots(notes_df: pd.DataFrame) -> pd.DataFrame:
                 continue
 
             # Slot position is the beat slot in which the token *starts*.
-            slot_pos = int(time_beats) + 1
+            slot_pos = int(time_units) + 1
             if slot_pos < 1:
                 slot_pos = 1
             if slot_pos > slots_per_measure:
@@ -264,11 +284,11 @@ def build_beat_slots(notes_df: pd.DataFrame) -> pd.DataFrame:
                 except Exception:
                     # If we can't parse a note token, ignore it.
                     pass
-                time_beats += token_duration_beats(txt, meter=meter, unit_len_whole=unit_len_whole)
+                time_units += token_duration_beats(txt, meter=meter, unit_len_whole=unit_len_whole)
 
             elif kind == "rest":
                 slot["rests"] += 1
-                time_beats += token_duration_beats(txt, meter=meter, unit_len_whole=unit_len_whole)
+                time_units += token_duration_beats(txt, meter=meter, unit_len_whole=unit_len_whole)
 
             elif kind == "chord":
                 try:

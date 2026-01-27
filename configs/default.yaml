@@ -19,8 +19,8 @@ artifacts:
   selfcheck_summary_csv: "outputs/evaluation/selfcheck_summary.csv"
 pipeline:
   tune_types: ["jig", "reel"]
-  min_tunebooks: 0
-  top_n: 2500        # start small for dev (you can raise later)
+  min_tunebooks: 10
+  top_n: 500        # start small for dev (you can raise later)
   only_chordy: false # (currently unused by the CLI; kept for future experiments)
 
 run:
