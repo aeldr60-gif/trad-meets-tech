@@ -29,6 +29,24 @@ FEATURE_SETS: Dict[str, List[str]] = {
         "type",
         "music_mode",
     ],
+    "no_rests": [
+        "part",
+        "slot_position",
+        "slots_per_measure",
+        *DEGREE_COLS,
+        "type",
+        "music_mode",
+    ],
+    "include_key": [
+        "part",
+        "key",
+        "music_mode"
+        "slot_position",
+        "slots_per_measure",
+        *DEGREE_COLS,
+        "rests",
+        "type",
+    ],
     # Drop potentially noisy metadata.
     "no_mode": [
         "part",
@@ -43,19 +61,30 @@ FEATURE_SETS: Dict[str, List[str]] = {
         "slot_position",
         "slots_per_measure",
         *DEGREE_COLS,
-        "rests",
     ],
     # Melody histograms only.
     "melody_only": [
         *DEGREE_COLS,
-        "rests",
+    ],
+    "no_parts": [
+        "slot_position",
+        "slots_per_measure",
+        *DEGREE_COLS,
+        "type",
+        "music_mode",
     ],
     # Melody + rhythmic position.
     "melody_plus_pos": [
         "slot_position",
         "slots_per_measure",
         *DEGREE_COLS,
+    ],
+    # Melody + meta (try to predict harmony from pitch content + mode/type, not position)
+    "melody_plus_meta": [
+        *DEGREE_COLS,
         "rests",
+        "type",
+        "music_mode",
     ],
     # Structure only.
     "pos_only": [

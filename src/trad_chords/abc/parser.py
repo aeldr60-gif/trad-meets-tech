@@ -2,12 +2,19 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Optional
+from typing import Iterator
 
 
 # Include common repeat/double-bar variants used in TheSession ABC bodies.
-# Note: ordering/longest-match is handled in tokenize_abc.
+# We match barlines using a regex to guarantee that measure separators are
+# tokenized correctly (and therefore measure_number increments).
 BAR_TOKENS = {"|", "||", "|:", "||:", ":|", ":||", "::", "[|", "|]"}
+
+# Bar regex (longest tokens first). Also supports common first/second ending
+# bar forms like |1 or :|2 as single tokens so the original ABC can be re-emitted.
+BAR_RE = re.compile(
+    r"(\|\|:|:\|\||\|\||\|:|:\|\d+|\|\d+|:\||::|\[\||\|\]|\|)"
+)
 
 # Endings like [1 [2 [3, etc. Capture all consecutive digits.
 ENDING_START_RE = re.compile(r"\[\d+")
@@ -19,22 +26,21 @@ CHORD_RE = re.compile(r'"{1,2}([^"]+?)"{1,2}')
 BRACKET_FIELD_RE = re.compile(r"\[[A-Za-z]:[^\]]*\]")
 
 
-
 @dataclass(frozen=True)
 class AbcToken:
-    kind: str  # note, rest, bar, chord, field, other
+    kind: str  # note, rest, bar, chord, field, ending, other
     text: str
 
 
 _NOTE_RE = re.compile(
-    r"""
+    r'''
     (?P<accidental>\^{1,2}|_{1,2}|=)?   # ^ ^^ _ __ =
     (?P<note>[A-Ga-g])                 # letter
     (?P<octave>[,']*)                  # octave marks
     # Length forms in TheSession bodies are usually simple (2, /, /2), but can also be
     # ratios like 3/2 or double slashes like //.
     (?P<length>\d+/\d+|\d+//|//|\d+/|/\d+|/|\d+)?
-    """,
+    ''',
     re.VERBOSE,
 )
 
@@ -71,27 +77,27 @@ def tokenize_abc(abc: str) -> Iterator[AbcToken]:
             i = m_end.end()
             continue
 
-        # bar / repeat tokens (longest match first)
-        for bt in sorted(BAR_TOKENS, key=len, reverse=True):
-            if abc.startswith(bt, i):
-                yield AbcToken("bar", bt)
-                i += len(bt)
-                break
-        else:
-            # note
-            m = _NOTE_RE.match(abc, i)
-            if m:
-                yield AbcToken("note", m.group(0))
-                i = m.end()
-                continue
+        # bar / repeat tokens (regex handles longest match)
+        m_bar = BAR_RE.match(abc, i)
+        if m_bar:
+            yield AbcToken("bar", m_bar.group(0))
+            i = m_bar.end()
+            continue
 
-            # rest
-            m = _REST_RE.match(abc, i)
-            if m:
-                yield AbcToken("rest", m.group(0))
-                i = m.end()
-                continue
+        # note
+        m = _NOTE_RE.match(abc, i)
+        if m:
+            yield AbcToken("note", m.group(0))
+            i = m.end()
+            continue
 
-            # fallback: consume one char
-            yield AbcToken("other", abc[i])
-            i += 1
+        # rest
+        m = _REST_RE.match(abc, i)
+        if m:
+            yield AbcToken("rest", m.group(0))
+            i = m.end()
+            continue
+
+        # fallback: consume one char
+        yield AbcToken("other", abc[i])
+        i += 1

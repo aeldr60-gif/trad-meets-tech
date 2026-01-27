@@ -1,135 +1,101 @@
 from __future__ import annotations
 
-from dataclasses import asdict
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import List
 
 import pandas as pd
 
-from trad_chords.abc.cleaning import remove_decorations
-from trad_chords.abc.parser import tokenize_abc, AbcToken
+from trad_chords.abc.parser import tokenize_abc
+
+
+# Bar tokens that we treat as a *part* boundary (new section).
+PART_BOUNDARY_BARS = {"||", "||:", ":||", "::", "[|", "|]"}
 
 
 def build_notes_table(index_df: pd.DataFrame) -> pd.DataFrame:
+    """Expand ABC bodies into a token-level notes table.
+
+    Each row in the returned table is one token (note/rest/chord/bar/etc.) from
+    the ABC body. We also attach contextual metadata (tune_id/setting_id/etc.)
+    from the index.
+
+    Important invariants:
+    - We treat *setting_id* as the primary ID (multiple settings can share the
+      same tune_id).
+    - Parts start at 1. A tune can never begin at part 2.
+    - 1st/2nd/3rd endings tokens (e.g., [1, [2) are *not* treated as parts.
     """
-    Convert jigs/reels index rows into a flat per-event table.
 
-    Initial schema (we'll expand later):
-      tune_id, name, type, meter, mode, tunebooks
-      part (placeholder), measure_number, event_index
-      token_kind, token_text
-      active_chord (last seen chord token)
-    """
-    rows: List[Dict[str, Any]] = []
+    required = {"tune_id", "setting_id", "name", "type", "meter", "mode", "abc", "tunebooks"}
+    missing = [c for c in required if c not in index_df.columns]
+    if missing:
+        raise ValueError(f"index_df missing required columns: {missing}")
 
-    # IMPORTANT: multiple settings exist for the same tune_id on TheSession.
-    # Throughout the pipeline we therefore treat *setting_id* as the primary identifier.
-    for _, r in index_df.iterrows():
-        tune_id = r.get("tune_id")
-        setting_id = r.get("setting_id")
-        name = r.get("name")
-        ttype = r.get("type")
-        meter = r.get("meter")
-        mode = r.get("mode")
-        tunebooks = r.get("tunebooks", 0)
-        abc_raw = str(r.get("abc", "") or "")
-        abc = remove_decorations(abc_raw)
+    out_rows: List[dict] = []
 
-        active_chord: Optional[str] = None
+    for _, row in index_df.iterrows():
+        abc_body = str(row.get("abc") or "")
 
-
-        measure = 1
-        event_i = 0
-        seen_any_notes_in_measure = False
+        base = {
+            "tune_id": int(row["tune_id"]),
+            "setting_id": int(row["setting_id"]),
+            "name": row.get("name"),
+            "type": row.get("type"),
+            "meter": row.get("meter"),
+            "mode": row.get("mode"),
+            "tunebooks": int(row.get("tunebooks") or 0),
+        }
 
         part = 1
-        measure_number = 1
+        measure = 1
+        event_index = 0
+        started = False  # becomes True once we see first note/rest/chord token
+        active_chord = None
 
-        measures_in_part = 0          # count completed measures inside the current part
-        started_music = False         # becomes True after we see any note/rest/chord (musical content)
+        for tok in tokenize_abc(abc_body):
+            kind = tok.kind
+            txt = tok.text
 
-        PART_START_BARS = {"|:", "||:", "[|", "::"}   # bars that often indicate a new “part” start
-        MEASURE_END_BARS = {"|", "||", ":|", "|]", "[|", "::", "|:", "||:"}  # anything you treat as a measure boundary
+            # Track whether we've actually started musical content
+            if kind in {"note", "rest", "chord"}:
+                started = True
 
+            # Robust bar detection: if a '|' slips through as 'other', still treat it as a bar.
+            is_bar = (kind == "bar") or (kind == "other" and txt == "|")
 
-        for tok in tokenize_abc(abc):
-            event_i += 1
-            # 1) Endings should NOT create new parts
-            if tok.kind == "ending":
-                # keep measure/part unchanged
-                continue
+            # Bar tokens advance measures, and sometimes parts.
+            if is_bar:
+                # If the tune *begins* with a repeat/double-bar marker (e.g., ||:),
+                # do not advance part/measure.
+                if not started and measure == 1 and event_index == 0:
+                    pass
+                else:
+                    if txt in PART_BOUNDARY_BARS:
+                        part += 1
+                        measure = 1
+                    else:
+                        measure += 1
 
-            # Track that we’ve actually begun musical content (so we don’t create “part 2, measure 1”)
-            if tok.kind in {"note", "rest"}:
-                started_music = True
-            elif tok.kind == "chord":
-                # chord markers count as "content" too; they shouldn't trigger part bumps at the very start
-                started_music = True
+            # Chord tokens update the active chord
+            if kind == "chord":
+                active_chord = txt
 
-            if tok.kind == "bar":
-                bt = tok.text
-
-                # 2) Count measures when you hit a measure boundary.
-                #    If your code increments measure_number elsewhere, adapt accordingly.
-                if bt in MEASURE_END_BARS:
-                    measures_in_part += 1
-                    measure_number += 1
-
-                # 3) Only start a new part when:
-                #    - we've already started the tune (saw notes/rests/chords)
-                #    - we have a “real” part length already (>= 2 measures)
-                #    - and we hit a part-start bar token
-                #
-                # This prevents:
-                #    - leading "||:" or "|:" from causing part 2 at measure 1
-                #    - tiny 1–2-measure “parts” created by endings/repeats noise
-                if (bt in PART_START_BARS) and started_music and (measures_in_part >= 2):
-                    part += 1
-                    measures_in_part = 0  # reset for the new part
-                    # NOTE: do NOT reset measure_number; measure_number stays global in the tune
-
-                # continue to your existing handling (e.g., active chord reset) if any
-                continue
-            if tok.kind == "bar":
-                # A "part" in session tune settings typically begins at:
-                # - start of tune
-                # - repeat starts/ends or double bars
-                if tok.text in {"||", "|:", ":|", ":||", "||:"}:
-                    part += 1
-
-                # Only advance the measure counter if we've actually seen notes since the last bar.
-                # (This avoids creating a phantom first measure when the abc begins with a leading bar token like "|:".)
-                if seen_any_notes_in_measure:
-                    measure += 1
-                    seen_any_notes_in_measure = False
-
-            if tok.kind == "note":
-                seen_any_notes_in_measure = True
-
-            if tok.kind == "chord":
-                active_chord = tok.text
-
-            rows.append(
+            out_rows.append(
                 {
-                    "tune_id": tune_id,
-                    "setting_id": setting_id,
-                    "name": name,
-                    "type": ttype,
-                    "meter": meter,
-                    "mode": mode,
-                    "tunebooks": tunebooks,
+                    **base,
                     "part": part,
                     "measure_number": measure,
-                    "event_index": event_i,
-                    "token_kind": tok.kind,
-                    "token_text": tok.text,
+                    "event_index": event_index,
+                    "token_kind": kind,
+                    "token_text": txt,
                     "active_chord": active_chord,
                 }
             )
 
-    return pd.DataFrame(rows)
+            event_index += 1
+
+    return pd.DataFrame(out_rows)
 
 
-def write_notes_table(df: pd.DataFrame, dest: Path) -> None:
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(dest, index=False)
+def write_notes_table(df: pd.DataFrame, path: str) -> None:
+    df.to_csv(path, index=False)

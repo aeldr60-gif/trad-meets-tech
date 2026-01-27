@@ -20,7 +20,7 @@ artifacts:
 pipeline:
   tune_types: ["jig", "reel"]
   min_tunebooks: 10
-  top_n: 500        # start small for dev (you can raise later)
+  top_n: 5000        # start small for dev (you can raise later)
   only_chordy: false # (currently unused by the CLI; kept for future experiments)
 
 run:
