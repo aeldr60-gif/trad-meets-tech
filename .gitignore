@@ -1,6 +1,4 @@
 data/raw/
-data/processed/
-outputs/
 *.joblib
 .venv/
 __pycache__/
