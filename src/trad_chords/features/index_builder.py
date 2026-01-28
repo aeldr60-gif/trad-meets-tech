@@ -6,6 +6,19 @@ from typing import Iterable, Optional
 
 import re
 
+
+"""
+Helpers for building tune indexes filtered by tune type and popularity.
+
+This module provides `build_jigs_reels_index()`, which selects tunes of specified
+types (e.g., jigs, reels), detects whether each tune contains any ABC chord
+symbols, joins in tunebook based popularity counts, applies optional minimum 
+popularity filtering, and returns a clean, popularity sorted index. A final
+`top_n` cutoff is enforced only after all filtering to ensure correct ranking.
+`write_index()` saves the resulting table to CSV.
+"""
+
+
 CHORD_RE = re.compile(r'"[A-G][#b]?(?:m|min|maj|dim|aug|7)?[^"]*"')
 
 

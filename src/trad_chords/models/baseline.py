@@ -19,6 +19,19 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from trad_chords.features.beat_slots import DEGREE_COLS
 
+"""
+Baseline logistic regression models for chord placement and chord tone prediction.
+
+This module defines the `BaselineModels` container (with save/load utilities) and
+provides helpers for building preprocessing pipelines, selecting usable numeric
+and categorical feature columns, and training two logistic regression models:
+one for predicting whether a chord occurs at a beat slot, and one for predicting
+its Nashville tone class. Preprocessing uses a ColumnTransformer with standardized
+numeric features and one hot encoded categorical features. Trained models are
+saved with accompanying environment metadata to aid reproducibility.
+"""
+
+
 
 @dataclass
 class BaselineModels:

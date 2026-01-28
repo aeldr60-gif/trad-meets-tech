@@ -7,6 +7,18 @@ import pandas as pd
 from trad_chords.features.beat_slots import DEGREE_COLS
 from trad_chords.models.feature_sets import get_feature_cols
 
+"""
+Helpers for preparing beat slot data for training the baseline chord prediction models.
+
+This module standardizes chord presence labels (normalizing older
+`chord_present` columns to `has_chord_here`) and provides
+`make_training_frames()`, which extracts feature matrices and target vectors for
+both placement and tone models. It validates that all required feature and label
+columns are present, normalizes numeric and categorical dtypes, and returns
+(X, y_place, X_tone, y_tone) in the exact format expected by the baseline
+training code.
+"""
+
 
 def ensure_chord_present(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize the chord-present label column.

@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-"""Music theory helpers.
+"""
+Music theory utilities for interpreting ABC notation in a key  and mode aware way.
 
-This module exists because multiple pipeline stages need consistent, key-aware
-interpretation of ABC notation.
+This module centralizes all pitch class, scale, mode, and chord mapping logic
+used throughout the pipeline. It provides consistent conversions between ABC
+tokens and pitch classes, derives diatonic and chromatic scale degree bins,
+parses TheSession-style key/mode fields, and translates between chord symbols
+and Nashville-number labels. These helpers ensure that every stage,from note
+tokenization to feature engineering to chord prediction,uses the same
+music theoretic rules.
 
 Public API (used across the project):
 - split_key_and_mode(mode_str)
@@ -13,9 +19,13 @@ Public API (used across the project):
 - degree_bin_label(tonic_pc, scale_pcs, pitch_class)
 - chord_symbol_to_pitch_class(chord_symbol) -> (root_pc, quality)
 - chord_to_nashville(tonic_pc, scale_pcs, root_pc, quality)
+- nashville_to_chord_symbol(tonic_pc, key_mode, nash)
+- mode_to_abc_key(mode_str)
 
-The names above intentionally match imports in other modules.
+The function names intentionally mirror common imports to keep call-sites
+predictable and uniform across the codebase.
 """
+
 
 import re
 from dataclasses import dataclass

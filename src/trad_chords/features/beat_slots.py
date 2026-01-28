@@ -17,6 +17,27 @@ from trad_chords.music.theory import (
     chord_to_nashville,
 )
 
+"""
+Utilities for interpreting ABC meter, note lengths, and token durations, and for
+constructing beat slot feature tables from a tokenized notes DataFrame.
+
+This module provides helpers for parsing ABC meter strings, determining the
+effective unit note length (L:), interpreting duration suffixes on notes/rests,
+and converting ABC tokens into durations expressed in beats or slot units. It
+also contains logic for allocating musical events to per measure “beat slots,”
+computing scale degree bins, and attaching chord metadata derived from chord
+symbols or Nashville numbers.
+
+The main entry point, `build_beat_slots()`, transforms a notes_df (as produced by
+a tokenizer) into a structured feature table with one row per beat slot. Each
+slot captures pitch class degree counts, rest counts, detected chords, meter
+information, and mode/key context,providing the standardized representation used
+by downstream ML models. A small wrapper, `write_beat_slots()`, writes the
+resulting table to disk.
+"""
+
+
+
 
 DEGREE_COLS = [
     "deg_1", "deg_1_5", "deg_2", "deg_2_5", "deg_3", "deg_3_5", "deg_4", "deg_4_5",

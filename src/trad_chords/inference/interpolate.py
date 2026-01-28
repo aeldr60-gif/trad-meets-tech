@@ -8,6 +8,21 @@ import pandas as pd
 from trad_chords.abc.render import build_chord_inserts_from_predictions, build_full_abc, render_abc_body_from_notes
 from trad_chords.models.baseline import BaselineModels
 
+"""
+Inference utilities for inserting predicted chords into chordless ABC settings.
+
+This module wraps the baseline placement/tone models and provides helpers for
+ensuring required feature columns, running predictions on beat slot features, and
+reconstructing ABC bodies with chord inserts. It aligns model predictions to
+event-level ABC tokens using `build_chord_inserts_from_predictions()` and
+re renders a clean ABC body and full ABC header via the render helpers.
+
+The main entry point, `interpolate_chordless_to_csv()`, filters to chordless
+settings, predicts chord presence and Nashville labels, converts them into chord
+symbols, inserts them at the correct beat slots, and writes an output CSV with
+both the ABC body and full ABC text for each tune.
+"""
+
 
 def _expected_columns_from_pipeline(pipe) -> Tuple[List[str], List[str]]:
     """Extract numeric + categorical column lists from a pipeline's ColumnTransformer."""

@@ -8,6 +8,21 @@ import pandas as pd
 from trad_chords.abc.parser import tokenize_abc
 
 
+"""
+Utilities for expanding ABC bodies into a structured, token level notes table.
+
+This module provides `build_notes_table()`, which tokenizes each tune’s ABC body
+and emits one row per token (notes, rests, chords, bars, endings, fields, and
+other symbols). It attaches contextual metadata from the tune index, tracks
+event order, infers measure and part numbers from barlines (with special handling
+of repeat/double bar boundaries), and preserves the currently active chord as it
+appears in the ABC. Settings are treated independently, and parts always begin at
+1, with endings like “[1” or “[2” not treated as new parts.
+
+The companion `write_notes_table()` helper writes the resulting table to CSV.
+"""
+
+
 # Bar tokens that we treat as a *part* boundary (new section).
 PART_BOUNDARY_BARS = {"||", "||:", ":||", "::", "[|", "|]"}
 

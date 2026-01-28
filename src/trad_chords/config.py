@@ -3,6 +3,17 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 import yaml
 
+"""
+Typed configuration loader for the trad chords pipeline.
+
+This module defines structured dataclasses for all configuration sections
+(paths, data sources, pipeline parameters, artifact locations, and runtime
+options) and provides `load_config()`, which reads a YAML file and instantiates
+a fully validated `AppConfig`. Centralizing config parsing ensures that every
+CLI command and pipeline stage receives consistent, type checked paths and
+settings, with sensible defaults for optional fields.
+"""
+
 
 @dataclass(frozen=True)
 class PathsConfig:

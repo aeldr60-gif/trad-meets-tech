@@ -1,16 +1,22 @@
 from __future__ import annotations
 
-"""Centralized feature set definitions.
-
-This module lets you experiment with *which existing beat-slot columns* are fed to the
-baseline models, without changing upstream feature engineering.
-
-Select a feature set via the environment variable:
-
-  TRAD_CHORDS_FEATURE_SET=all
-
-or by calling `get_feature_cols("all")`.
 """
+Centralized definitions of feature sets used by the baseline chord prediction models.
+
+This module provides a single place to configure *which beat slot features* are fed
+into the model pipelines, allowing experimentation with different subsets of the
+existing feature engineering without modifying upstream code. Feature sets group
+together structural, melodic, rhythmic, and metadata columns in various
+combinations (e.g., all features, melody only, no metadata, rhythm only).
+
+A feature set can be selected via the environment variable:
+
+    TRAD_CHORDS_FEATURE_SET=all
+
+or programmatically with `get_feature_cols("all")`. Unknown names raise a clear
+error, ensuring reproducible and explicit model configurations.
+"""
+
 
 import os
 from typing import Dict, List

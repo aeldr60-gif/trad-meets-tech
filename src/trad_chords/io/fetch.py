@@ -1,6 +1,15 @@
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+"""
+Simple helpers for downloading TheSession CSV sources.
+
+`download_file()` wraps a basic URL fetch with a custom User Agent and ensures
+the destination directory exists. `fetch_thesession_csvs()` downloads the tunes
+and popularity CSV files from the configured URLs, raising an error if either
+URL is missing.
+"""
+
 
 def download_file(url: str, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)

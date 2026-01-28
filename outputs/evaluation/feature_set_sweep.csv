@@ -1,9 +1,0 @@
-feature_set,n_features,placement_accuracy,tone_accuracy,n_rows,n_chord_slots,feature_cols
-all,20,0.9166562526035158,0.6376354114355406,96024,13939,part|slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|rests|type|music_mode
-no_parts,18,0.9164687994667999,0.636487552909104,96024,13939,slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|type|music_mode
-melody_plus_meta,17,0.8529638423727401,0.6300308486978979,96024,13939,deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|rests|type|music_mode
-melody_plus_pos,16,0.9164687994667999,0.45828251667981923,96024,13939,slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5
-no_mode,19,0.9169061901191369,0.4540497883635842,96024,13939,part|slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|rests|type
-no_meta,17,0.9169061901191369,0.45369108257407276,96024,13939,part|slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5
-melody_only,14,0.8536824127301508,0.44292990888872946,96024,13939,deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5
-pos_only,5,0.9155419478463718,0.41810746825453765,96024,13939,part|slot_position|slots_per_measure|type|music_mode

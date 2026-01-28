@@ -20,6 +20,25 @@ from trad_chords.models.baseline import train_baseline, BaselineModels
 from trad_chords.inference.harmonize import harmonize_chordless
 from trad_chords.models.feature_sets import FEATURE_SETS, get_feature_cols
 
+"""
+Command line interface for the entire trad chords processing and modeling pipeline.
+
+This Typer based CLI ties together all major stages of the project: fetching raw
+TheSession CSVs, inspecting loaded data, building tune indexes, expanding ABC
+into token level notes tables, generating beat slot features, splitting chordy
+vs. chordless settings, training the baseline chord prediction models, evaluating
+their self consistency, sweeping feature set variants, and finally harmonizing
+chordless tunes into copy pasteable ABC.
+
+Each command wraps a well defined pipeline step, reads paths and parameters from
+the project config, and writes reproducible artifacts under the configured output
+directories. This script is the main entry point for running the full workflow
+from raw data → features → models → inferred harmonizations.
+"""
+
+
+
+
 app = typer.Typer(add_completion=False)
 DEFAULT_CONFIG = "configs/default.yaml"
 

@@ -12,6 +12,23 @@ from trad_chords.music.theory import parse_mode, scale_pitch_classes, nashville_
 from trad_chords.models.baseline import BaselineModels
 from trad_chords.models.feature_sets import get_feature_cols
 
+"""
+End to end inference pipeline for harmonizing chordless ABC settings using
+pretrained baseline models.
+
+This module loads model artifacts and precomputed feature tables, selects only the
+chordless tune settings, and predicts both chord placement and chord quality
+(Nashville number). It then converts Nashville predictions into concrete chord
+symbols in the tune’s key/mode, aligns those predictions with beat slot timing,
+and re inserts the resulting chord tokens directly into the original ABC body.
+
+The main entry point, `harmonize_chordless()`, produces two outputs per setting:
+(1) an ABC body with predicted chords inserted, and (2) a full ABC string with a
+minimal metadata header suitable for copy/paste into ABC players. The function
+writes all results to a CSV and returns its filesystem path.
+"""
+
+
 
 def _meter_to_unit_length(meter: str) -> str:
     """Choose a reasonable default L: for full_abc.
