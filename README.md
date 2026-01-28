@@ -34,3 +34,5 @@ trad-chords train
 trad-chords evaluate-selfcheck
 trad-chords sweep-feature-sets
 trad-chords harmonize-chordless
+
+trad-chords sweep-feature-sets

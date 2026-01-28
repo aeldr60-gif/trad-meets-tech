@@ -77,7 +77,15 @@ def hello() -> None:
 
 
 @app.command("fetch-data")
-def fetch_data(config: str = DEFAULT_CONFIG) -> None:
+def fetch_data(
+    config: str = DEFAULT_CONFIG,
+    preview_setting_id: int | None = typer.Option(
+    None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
+    ),
+) -> None:
     cfg = load_config(config)
     fetch_thesession_csvs(
         tunes_url=cfg.sources.tunes_url,
@@ -89,13 +97,18 @@ def fetch_data(config: str = DEFAULT_CONFIG) -> None:
     print(f"- {cfg.paths.raw_tunes_csv}")
     print(f"- {cfg.paths.raw_popularity_csv}")
 
-    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
-    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
-
 
 
 @app.command("load-data")
-def load_data(config: str = DEFAULT_CONFIG) -> None:
+def load_data(
+    config: str = DEFAULT_CONFIG,
+    preview_setting_id: int | None = typer.Option(
+        None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
+    ),
+) -> None:
     cfg = load_config(config)
     tunes = load_tunes_csv(cfg.paths.raw_tunes_csv)
     pop = load_popularity_csv(cfg.paths.raw_popularity_csv)
@@ -107,12 +120,18 @@ def load_data(config: str = DEFAULT_CONFIG) -> None:
     if "type" in tunes.columns:
         print("Sample tune types:", sorted(tunes["type"].dropna().astype(str).str.lower().unique())[:20])
 
-    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
-    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
 
 
 @app.command("build-index")
-def build_index_cmd(config: str = DEFAULT_CONFIG) -> None:
+def build_index_cmd(
+    config: str = DEFAULT_CONFIG,
+    preview_setting_id: int | None = typer.Option(
+    None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
+    ),
+) -> None:
     cfg = load_config(config)
 
     if should_skip(cfg.artifacts.jigs_reels_index_csv, cfg.run.overwrite):
@@ -142,7 +161,15 @@ def build_index_cmd(config: str = DEFAULT_CONFIG) -> None:
 
 
 @app.command("build-notes-table")
-def build_notes_table_cmd(config: str = DEFAULT_CONFIG) -> None:
+def build_notes_table_cmd(
+    config: str = DEFAULT_CONFIG,
+    preview_setting_id: int | None = typer.Option(
+        None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
+    ),
+) -> None:
     cfg = load_config(config)
     index_df = pd.read_csv(cfg.artifacts.jigs_reels_index_csv)
 
@@ -162,7 +189,15 @@ def build_notes_table_cmd(config: str = DEFAULT_CONFIG) -> None:
 
 
 @app.command("build-beat-slots")
-def build_beat_slots_cmd(config: str = DEFAULT_CONFIG) -> None:
+def build_beat_slots_cmd(
+    config: str = DEFAULT_CONFIG,
+    preview_setting_id: int | None = typer.Option(
+    None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
+    ),
+) -> None:
     cfg = load_config(config)
 
     if should_skip(cfg.artifacts.beat_slots_csv, cfg.run.overwrite):
@@ -199,7 +234,15 @@ def build_beat_slots_cmd(config: str = DEFAULT_CONFIG) -> None:
 
 
 @app.command("split-index")
-def split_index_cmd(config: str = DEFAULT_CONFIG) -> None:
+def split_index_cmd(
+    config: str = DEFAULT_CONFIG,
+    preview_setting_id: int | None = typer.Option(
+    None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
+    ),
+) -> None:
     cfg = load_config(config)
 
     if should_skip(cfg.artifacts.chordy_index_csv, cfg.run.overwrite) and should_skip(
@@ -223,7 +266,15 @@ def split_index_cmd(config: str = DEFAULT_CONFIG) -> None:
 
 
 @app.command("train")
-def train_cmd(config: str = DEFAULT_CONFIG) -> None:
+def train_cmd(
+    config: str = DEFAULT_CONFIG,
+    preview_setting_id: int | None = typer.Option(
+    None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
+    ),
+) -> None:
     cfg = load_config(config)
 
     beat = pd.read_csv(cfg.artifacts.beat_slots_csv)
@@ -258,7 +309,15 @@ def train_cmd(config: str = DEFAULT_CONFIG) -> None:
 
 
 @app.command("evaluate-selfcheck")
-def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG) -> None:
+def evaluate_selfcheck_cmd(
+    config: str = DEFAULT_CONFIG,
+    preview_setting_id: int | None = typer.Option(
+    None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
+    ),
+) -> None:
     cfg = load_config(config)
 
     beat = pd.read_csv(cfg.artifacts.beat_slots_csv)
@@ -322,6 +381,12 @@ def sweep_feature_sets_cmd(
     out_csv: str = typer.Option(
         "outputs/evaluation/feature_set_sweep.csv",
         help="Where to write the sweep results CSV.",
+    ),
+    preview_setting_id: int | None = typer.Option(
+        None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
     ),
 ) -> None:
     """Train + self-check every FEATURE_SET and write a ranked summary CSV.
@@ -399,7 +464,14 @@ def sweep_feature_sets_cmd(
 
 
 @app.command("harmonize-chordless")
-def harmonize_chordless_cmd(config: str = DEFAULT_CONFIG) -> None:
+def harmonize_chordless_cmd(config: str = DEFAULT_CONFIG,
+preview_setting_id: int | None = typer.Option(
+    None, "--preview-setting-id", help="Print head() for this setting_id."
+    ),
+    preview_n: int = typer.Option(
+        5, "--preview-n", help="Rows to print for previews."
+    ),
+) -> None:
     """Predict chords for chordless settings and write a copy/pasteable ABC CSV."""
     out_csv = harmonize_chordless(config)
     print(f"Wrote interpolated chordless CSV -> {out_csv}")
