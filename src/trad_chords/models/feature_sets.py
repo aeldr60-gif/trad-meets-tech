@@ -46,7 +46,7 @@ FEATURE_SETS: Dict[str, List[str]] = {
     "include_key": [
         "part",
         "key",
-        "music_mode"
+        "music_mode",
         "slot_position",
         "slots_per_measure",
         *DEGREE_COLS,

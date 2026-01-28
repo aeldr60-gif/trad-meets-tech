@@ -56,6 +56,20 @@ def _preview_setting(df: pd.DataFrame, setting_id: int | None, n: int, label: st
     print(sub.head(n))
 
 
+def _preview_features_for_setting(X: pd.DataFrame, df: pd.DataFrame, setting_id: int | None, n: int, label: str) -> None:
+    """Print feature rows corresponding to a setting_id (X and df share index)."""
+    if setting_id is None:
+        return
+    if "setting_id" not in df.columns:
+        return
+    idx = df.index[df["setting_id"] == setting_id]
+    if len(idx) == 0:
+        print(f"[yellow]Preview ({label} features): no rows for setting_id={setting_id}[/yellow]")
+        return
+    print(f"\n[bold]Preview ({label} features) setting_id={setting_id}[/bold]")
+    print(X.loc[idx].head(n))
+
+
 
 @app.command()
 def hello() -> None:
@@ -75,6 +89,10 @@ def fetch_data(config: str = DEFAULT_CONFIG) -> None:
     print(f"- {cfg.paths.raw_tunes_csv}")
     print(f"- {cfg.paths.raw_popularity_csv}")
 
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
+
+
 
 @app.command("load-data")
 def load_data(config: str = DEFAULT_CONFIG) -> None:
@@ -88,6 +106,9 @@ def load_data(config: str = DEFAULT_CONFIG) -> None:
     print(f"Popularity columns: {list(pop.columns)}")
     if "type" in tunes.columns:
         print("Sample tune types:", sorted(tunes["type"].dropna().astype(str).str.lower().unique())[:20])
+
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
 
 
 @app.command("build-index")
@@ -115,6 +136,10 @@ def build_index_cmd(config: str = DEFAULT_CONFIG) -> None:
     print(f"top_n={cfg.pipeline.top_n} | min_tunebooks={cfg.pipeline.min_tunebooks}")
     print(df.head(5))
 
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
+
+
 
 @app.command("build-notes-table")
 def build_notes_table_cmd(config: str = DEFAULT_CONFIG) -> None:
@@ -130,6 +155,10 @@ def build_notes_table_cmd(config: str = DEFAULT_CONFIG) -> None:
 
     print(f"Wrote notes table: {len(notes):,} rows -> {cfg.artifacts.notes_table_csv}")
     print(notes.head(10))
+
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
+
 
 
 @app.command("build-beat-slots")
@@ -164,6 +193,10 @@ def build_beat_slots_cmd(config: str = DEFAULT_CONFIG) -> None:
     print(f"Wrote beat slots: {len(slots):,} rows -> {cfg.artifacts.beat_slots_csv}")
     print(slots.head(10))
 
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
+
+
 
 @app.command("split-index")
 def split_index_cmd(config: str = DEFAULT_CONFIG) -> None:
@@ -183,6 +216,10 @@ def split_index_cmd(config: str = DEFAULT_CONFIG) -> None:
 
     print(f"Chordy settings: {len(chordy):,} -> {cfg.artifacts.chordy_index_csv}")
     print(f"Chordless settings: {len(chordless):,} -> {cfg.artifacts.chordless_index_csv}")
+
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
+
 
 
 @app.command("train")
@@ -214,6 +251,10 @@ def train_cmd(config: str = DEFAULT_CONFIG) -> None:
 
     print(f"Trained on {len(beat):,} beat slots")
     print(f"Wrote models -> {cfg.paths.model_dir}")
+
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
+
 
 
 @app.command("evaluate-selfcheck")
@@ -264,6 +305,10 @@ def evaluate_selfcheck_cmd(config: str = DEFAULT_CONFIG) -> None:
 
     print(f"Wrote {metrics_json}")
     print(f"Wrote {summary_csv}")
+
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
+
 
 
 @app.command("sweep-feature-sets")
@@ -348,9 +393,17 @@ def sweep_feature_sets_cmd(
         )
     print(f"\nWrote {out_path}")
 
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
+
+
 
 @app.command("harmonize-chordless")
 def harmonize_chordless_cmd(config: str = DEFAULT_CONFIG) -> None:
     """Predict chords for chordless settings and write a copy/pasteable ABC CSV."""
     out_csv = harmonize_chordless(config)
     print(f"Wrote interpolated chordless CSV -> {out_csv}")
+
+    preview_setting_id: int | None = typer.Option(None, "--preview-setting-id", help="Print head() for this setting_id."),
+    preview_n: int = typer.Option(5, "--preview-n", help="Rows to print for previews."),
+
