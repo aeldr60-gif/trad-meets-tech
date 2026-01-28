@@ -1,0 +1,11 @@
+feature_set,n_features,placement_accuracy,tone_accuracy,n_rows,n_chord_slots,feature_cols
+all,20,0.9136801004044066,0.6667497507477568,28684,4012,part|slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|rests|type|music_mode
+include_key,21,0.9136801004044066,0.6667497507477568,28684,4012,part|key|music_mode|slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|rests|type
+no_rests,19,0.9136452377632129,0.6667497507477568,28684,4012,part|slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|type|music_mode
+no_parts,18,0.9140287268163436,0.6645064805583251,28684,4012,slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|type|music_mode
+melody_plus_meta,17,0.8592595175010459,0.6590229312063809,28684,4012,deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|rests|type|music_mode
+no_mode,19,0.9134011992748571,0.5109670987038883,28684,4012,part|slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5|rests|type
+no_meta,17,0.9137149630456003,0.5107178464606181,28684,4012,part|slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5
+melody_plus_pos,16,0.914447078510668,0.5032402791625125,28684,4012,slot_position|slots_per_measure|deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5
+melody_only,14,0.8599567703249198,0.49327018943170486,28684,4012,deg_1|deg_1_5|deg_2|deg_2_5|deg_3|deg_3_5|deg_4|deg_4_5|deg_5|deg_5_5|deg_6|deg_6_5|deg_7|deg_7_5
+pos_only,5,0.9081718030958026,0.4426719840478564,28684,4012,part|slot_position|slots_per_measure|type|music_mode
