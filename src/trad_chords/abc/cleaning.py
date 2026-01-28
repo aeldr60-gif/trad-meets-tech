@@ -1,5 +1,15 @@
 import re
 
+"""
+Removes common ABC-notation decorations, such as !markers!, +ornaments+, {grace
+notes}, and simple symbols like ~ and . to produce a cleaner string suitable for
+analysis. Also collapses repeated whitespace.
+
+Example:
+    Input:  "A{g}B !trill! c~ d+cut+ e."
+    Output: "A B c d e"
+"""
+
 
 _DECORATION_PATTERNS = [
     r"!\w+!",            # !slide!

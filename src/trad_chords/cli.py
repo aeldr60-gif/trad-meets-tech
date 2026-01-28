@@ -42,6 +42,20 @@ from raw data → features → models → inferred harmonizations.
 app = typer.Typer(add_completion=False)
 DEFAULT_CONFIG = "configs/default.yaml"
 
+def _preview_setting(df: pd.DataFrame, setting_id: int | None, n: int, label: str) -> None:
+    if setting_id is None:
+        return
+    if "setting_id" not in df.columns:
+        print(f"[yellow]Preview skipped ({label}): no setting_id column[/yellow]")
+        return
+    sub = df[df["setting_id"] == setting_id]
+    if sub.empty:
+        print(f"[yellow]Preview ({label}): no rows for setting_id={setting_id}[/yellow]")
+        return
+    print(f"\n[bold]Preview ({label}) setting_id={setting_id}[/bold]")
+    print(sub.head(n))
+
+
 
 @app.command()
 def hello() -> None:

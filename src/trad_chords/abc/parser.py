@@ -4,6 +4,16 @@ import re
 from dataclasses import dataclass
 from typing import Iterator
 
+"""
+Tokenizes ABC notation into structured elements such as notes, rests, barlines,
+chords, repeat/ending markers, and inline field directives. Handles TheSession-
+style variants, including complex bar tokens (|:, :||, |1, etc.) and embedded
+[K:], [L:], and quoted chord symbols. Produces a stream of AbcToken objects
+preserving the original text for accurate downstream parsing or re emission.
+"""
+
+
+
 
 # Include common repeat/double-bar variants used in TheSession ABC bodies.
 # We match barlines using a regex to guarantee that measure separators are

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-"""ABC rendering helpers.
-
-This module is used by the (optional) `inference.interpolate` path.
-
-The active CLI pipeline uses `inference.harmonize`, which directly inserts
-chord tokens while iterating the notes table. This module keeps a more
-general "render from notes + chord inserts" API.
 """
+ABC rendering helpers.
+
+This module supports workflows that construct ABC notation programmatically,
+particularly the optional `inference.interpolate` path. Unlike the
+`inference.harmonize` CLI which injects chords during a single pass over the
+notes table this module provides a more general “render from notes plus chord
+inserts” API. It includes utilities for reconstructing an ABC body from tokenized
+note/rest events, generating minimal ABC headers, mapping beat/slot positions to
+event indices, and converting predicted chord labels into ABC chord insertions.
+"""
+
 
 from collections import defaultdict
 from typing import Dict, List, Mapping, Tuple
