@@ -1,0 +1,50 @@
+Metadata-Version: 2.4
+Name: trad-chords
+Version: 0.1.0
+Summary: Trad Meets Tech: Predicting chords for jigs and reels
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: typer>=0.12
+Requires-Dist: rich>=13.7
+Requires-Dist: pandas>=2.0
+Requires-Dist: numpy>=1.24
+Requires-Dist: scikit-learn>=1.3
+Requires-Dist: joblib>=1.2
+
+# Trad Meets Tech (trad-chords)
+
+Predicting chord placement and chord identity for Irish traditional jigs and reels using TheSession.org ABC notation.
+
+## What this project does
+This pipeline:
+1) downloads TheSession CSV data,
+2) filters to jigs and reels,
+3) tokenizes ABC into a notes table with part/measure structure,
+4) converts notes into beat-aligned “slot” features,
+5) trains two baseline ML models:
+   - chord placement (does a chord occur at this slot?)
+   - chord tone (which chord label, in Nashville-style notation, at true chord slots?)
+6) applies the models to chordless tunes and outputs ABC strings with inserted chord annotations.
+
+## Quickstart
+
+### 1) Setup
+```bash
+cd ~/trad-meets-tech
+conda deactivate || true
+source .venv/bin/activate
+pip install -e .
+
+### 2) Running the pipeline
+
+trad-chords fetch-data
+trad-chords load-data
+trad-chords build-index
+trad-chords build-notes-table
+trad-chords build-beat-slots
+trad-chords split-index
+trad-chords train
+trad-chords evaluate-selfcheck
+trad-chords sweep-feature-sets
+trad-chords harmonize-chordless
